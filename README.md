@@ -1,8 +1,8 @@
-go get github.com/apisit/s3
+go get github.com/hiteshjoshi/s3
 
 
 import (
-"github.com/apisit/s3"
+"github.com/hiteshjoshi/s3"
 )
 
 //using it
