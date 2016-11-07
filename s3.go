@@ -52,8 +52,8 @@ func IsValidBucket(bucket string) bool {
 }
 
 //	Init method take Amazon credential. Acesskey and SecretKey
-func Init(accesskey string, secretKey string) *Client {
-	return &Client{&Auth{accesskey, secretKey, "s3-ap-southeast-1.amazonaws.com"}}
+func Init(accesskey string, secretKey string, hostName string) *Client {
+	return &Client{&Auth{accesskey, secretKey, hostName}}
 }
 
 type Client struct {
@@ -98,6 +98,17 @@ func (c *Client) bucketURL(bucket string) string {
 //	Full url with file key
 func (c *Client) keyURL(bucket, key string) string {
 	return c.bucketURL(bucket) + key
+}
+
+// full url
+func (c *Client) fileUrl(bucket string, key string) string {
+
+	if key[0:1] == "/" {
+		return fmt.Sprintf("https://%s/%s%s", c.hostname(), bucket, key)
+	} else {
+		return fmt.Sprintf("https://%s/%s/%s", c.hostname(), bucket, key)
+	}
+
 }
 
 func (c *Client) ListBucket(bucket string) (result *ListBucketResults, err error) {
@@ -157,4 +168,24 @@ func (c *Client) Upload(key, bucket string, data []byte) (fileUrl string, err er
 	}
 	full := fmt.Sprintf("%s", url)
 	return full, nil
+}
+
+//to download form s3
+func (c *Client) Download(bucket string, key string) []byte {
+
+	fileUrl := c.fileUrl(bucket, key)
+	req, _ := http.NewRequest("GET", fileUrl, nil)
+	req.Header.Set("Date", time.Now().UTC().Format(http.TimeFormat))
+	c.Auth.SignRequest(req)
+	httpClient := &http.Client{}
+	res, err := httpClient.Do(req)
+	if err != nil {
+		return nil
+	}
+
+	defer res.Body.Close()
+	body, _ := ioutil.ReadAll(res.Body)
+
+	return body
+
 }
